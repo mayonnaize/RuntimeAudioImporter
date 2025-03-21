@@ -1,4 +1,4 @@
-﻿// Georgy Treshchev 2024.
+// Georgy Treshchev 2024.
 
 #pragma once
 
@@ -225,6 +225,8 @@ namespace VoiceActivityDetector
 	}
 }
 
+// TODO: Fix the following error
+// E0289 no instance of constructor "FRuntimeBulkDataBuffer<DataType>::FRuntimeBulkDataBuffer [with DataType=float]" matches the argument list
 /**
  * An alternative to FBulkDataBuffer with consistent data types
  */

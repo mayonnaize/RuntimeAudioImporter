@@ -15,7 +15,7 @@ public class RuntimeAudioImporter : ModuleRules
 
 		// Disable if you are not using audio input capture
 		bool bEnableCaptureInputSupport = true;
-		
+
 		// Disable if you are not using Voice Activity Detection
 		bool bEnableVADSupport = true;
 
@@ -24,11 +24,10 @@ public class RuntimeAudioImporter : ModuleRules
 
 		// Bink format is only supported in Unreal Engine version >= 5
 		bool bEnableBinkSupport = Target.Version.MajorVersion >= 5;
-		
+
 		// Whether to use dr_mp3 or minimp3 for MP3 decoding (minimp3 is used by default)
 		// minimp3 is preferred since it supports LAME tags for more precise seeking and length information
-		bool bUseDrMp3 = false;
-
+		bool bUseDrMp3 = true;
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		AddEngineThirdPartyPrivateStaticDependencies(Target,
@@ -36,7 +35,7 @@ public class RuntimeAudioImporter : ModuleRules
 			"Vorbis",
 			"libOpus"
 		);
-		
+
 		// Add opusfile include path for the opusfile library (used for Opus decoding)
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "opusfile"));
 
@@ -57,7 +56,7 @@ public class RuntimeAudioImporter : ModuleRules
 #endif
 				"libvorbisenc.a"));
 		}
-		
+
 		PublicDefinitions.Add(string.Format("DR_MP3_IMPLEMENTATION={0}", bUseDrMp3 ? "1" : "0"));
 		PublicDefinitions.Add(string.Format("MINIMP3_IMPLEMENTATION={0}", bUseDrMp3 ? "0" : "1"));
 
@@ -150,23 +149,23 @@ public class RuntimeAudioImporter : ModuleRules
 			);
 		}
 
-        PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_CAPTURE_SUPPORT={0}", (bEnableCaptureInputSupport ? "1" : "0")));
+		PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_CAPTURE_SUPPORT={0}", (bEnableCaptureInputSupport ? "1" : "0")));
 
-        if (bEnableVADSupport)
-        {
-	        PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "libfvad", "include"));
-	        PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "libfvad", "src"));
-        }
+		if (bEnableVADSupport)
+		{
+			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "libfvad", "include"));
+			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "libfvad", "src"));
+		}
 
-        PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_VAD_SUPPORT={0}", (bEnableVADSupport ? "1" : "0")));
+		PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_VAD_SUPPORT={0}", (bEnableVADSupport ? "1" : "0")));
 
-        PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_FILEOPERATION_SUPPORT={0}", (bEnableFileOperationSupport ? "1" : "0")));
+		PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_FILEOPERATION_SUPPORT={0}", (bEnableFileOperationSupport ? "1" : "0")));
 
 
 		if (bEnableBinkSupport)
 		{
 			PrivateDependencyModuleNames.Add("BinkAudioDecoder");
-			
+
 			PublicSystemIncludePaths.Add(Path.Combine(EngineDirectory, "Source", "Runtime", "BinkAudioDecoder", "SDK", "BinkAudio", "Include"));
 
 			if (Target.Platform == UnrealTargetPlatform.Win64)
@@ -192,7 +191,7 @@ public class RuntimeAudioImporter : ModuleRules
 			}
 		}
 
-        PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_BINK_DECODE_SUPPORT={0}", (bEnableBinkSupport ? "1" : "0")));
-        PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_BINK_ENCODE_SUPPORT={0}", (bEnableBinkSupport && (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac) ? "1" : "0")));
+		PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_BINK_DECODE_SUPPORT={0}", (bEnableBinkSupport ? "1" : "0")));
+		PublicDefinitions.Add(string.Format("WITH_RUNTIMEAUDIOIMPORTER_BINK_ENCODE_SUPPORT={0}", (bEnableBinkSupport && (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac) ? "1" : "0")));
     }
 }
