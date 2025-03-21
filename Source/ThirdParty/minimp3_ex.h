@@ -6,7 +6,7 @@
     This software is distributed without any warranty.
     See <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
-//#include <stddef.h>
+#include <stddef.h>
 #include "minimp3.h"
 
 /* flags for mp3dec_ex_open_* functions */
@@ -529,8 +529,7 @@ int mp3dec_iterate_buf(const uint8_t *buf, size_t buf_size, MP3D_ITERATE_CB call
 
         if (callback)
         {
-            ret = callback(user_data, hdr, frame_size, free_format_bytes, buf_size, hdr - orig_buf, &frame_info);
-            if (ret != 0)
+            if ((ret = callback(user_data, hdr, frame_size, free_format_bytes, buf_size, hdr - orig_buf, &frame_info)))
                 return ret;
         }
         buf      += frame_size;
@@ -591,8 +590,7 @@ int mp3dec_iterate_cb(mp3dec_io_t *io, uint8_t *buf, size_t buf_size, MP3D_ITERA
         readed += i;
         if (callback)
         {
-            ret = callback(user_data, hdr, frame_size, free_format_bytes, filled - consumed, readed, &frame_info);
-            if (ret != 0)
+            if ((ret = callback(user_data, hdr, frame_size, free_format_bytes, filled - consumed, readed, &frame_info)))
                 return ret;
         }
         readed += frame_size;
@@ -982,8 +980,7 @@ int mp3dec_ex_open_cb(mp3dec_ex_t *dec, mp3dec_io_t *io, int flags)
     memset(dec, 0, sizeof(*dec));
 #ifdef MINIMP3_HAVE_RING
     int ret;
-    ret = mp3dec_open_ring(&dec->file, MINIMP3_IO_SIZE)
-    if (ret != 0)
+    if (ret = mp3dec_open_ring(&dec->file, MINIMP3_IO_SIZE))
         return ret;
 #else
     dec->file.size = MINIMP3_IO_SIZE;
@@ -1296,8 +1293,7 @@ int mp3dec_detect(const char *file_name)
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file(file_name, &map_info)))
         return ret;
     return mp3dec_detect_mapinfo(&map_info);
 }
@@ -1306,8 +1302,7 @@ int mp3dec_load(mp3dec_t *dec, const char *file_name, mp3dec_file_info_t *info, 
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file(file_name, &map_info)))
         return ret;
     return mp3dec_load_mapinfo(dec, &map_info, info, progress_cb, user_data);
 }
@@ -1316,8 +1311,7 @@ int mp3dec_iterate(const char *file_name, MP3D_ITERATE_CB callback, void *user_d
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file(file_name, &map_info)))
         return ret;
     return mp3dec_iterate_mapinfo(&map_info, callback, user_data);
 }
@@ -1327,8 +1321,7 @@ int mp3dec_ex_open(mp3dec_ex_t *dec, const char *file_name, int flags)
     int ret;
     if (!dec)
         return MP3D_E_PARAM;
-    ret = mp3dec_open_file(file_name, &dec->file);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file(file_name, &dec->file)))
         return ret;
     return mp3dec_ex_open_mapinfo(dec, flags);
 }
@@ -1354,8 +1347,7 @@ int mp3dec_detect_w(const wchar_t *file_name)
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file_w(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file_w(file_name, &map_info)))
         return ret;
     return mp3dec_detect_mapinfo(&map_info);
 }
@@ -1364,8 +1356,7 @@ int mp3dec_load_w(mp3dec_t *dec, const wchar_t *file_name, mp3dec_file_info_t *i
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file_w(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file_w(file_name, &map_info)))
         return ret;
     return mp3dec_load_mapinfo(dec, &map_info, info, progress_cb, user_data);
 }
@@ -1374,8 +1365,7 @@ int mp3dec_iterate_w(const wchar_t *file_name, MP3D_ITERATE_CB callback, void *u
 {
     int ret;
     mp3dec_map_info_t map_info;
-    ret = mp3dec_open_file_w(file_name, &map_info);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file_w(file_name, &map_info)))
         return ret;
     return mp3dec_iterate_mapinfo(&map_info, callback, user_data);
 }
@@ -1383,8 +1373,7 @@ int mp3dec_iterate_w(const wchar_t *file_name, MP3D_ITERATE_CB callback, void *u
 int mp3dec_ex_open_w(mp3dec_ex_t *dec, const wchar_t *file_name, int flags)
 {
     int ret;
-    ret = mp3dec_open_file_w(file_name, &dec->file);
-    if (ret != 0)
+    if ((ret = mp3dec_open_file_w(file_name, &dec->file)))
         return ret;
     return mp3dec_ex_open_mapinfo(dec, flags);
 }
