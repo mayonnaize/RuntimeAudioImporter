@@ -1,6 +1,6 @@
 /*
 WAV audio loader and writer. Choice of public domain or MIT-0. See license statements at the end of this file.
-dr_wav - v0.14.0 - TBD
+dr_wav - v0.13.14 - 2023-12-02
 
 David Reid - mackron@gmail.com
 
@@ -146,8 +146,8 @@ extern "C" {
 #define DRWAV_XSTRINGIFY(x)     DRWAV_STRINGIFY(x)
 
 #define DRWAV_VERSION_MAJOR     0
-#define DRWAV_VERSION_MINOR     14
-#define DRWAV_VERSION_REVISION  0
+#define DRWAV_VERSION_MINOR     13
+#define DRWAV_VERSION_REVISION  14
 #define DRWAV_VERSION_STRING    DRWAV_XSTRINGIFY(DRWAV_VERSION_MAJOR) "." DRWAV_XSTRINGIFY(DRWAV_VERSION_MINOR) "." DRWAV_XSTRINGIFY(DRWAV_VERSION_REVISION)
 
 #include <stddef.h> /* For size_t. */
@@ -176,7 +176,7 @@ typedef unsigned int            drwav_uint32;
         #pragma GCC diagnostic pop
     #endif
 #endif
-#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__)) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) || defined(__powerpc64__)
+#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__)) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(_M_ARM64) || defined(__powerpc64__)
     typedef drwav_uint64        drwav_uintptr;
 #else
     typedef drwav_uint32        drwav_uintptr;
@@ -555,11 +555,11 @@ typedef struct
     /* See drwav_smpl_loop_type. */
     drwav_uint32 type;
 
-    /* The offset of the first sample to be played in the loop. */
-    drwav_uint32 firstSampleOffset;
+    /* The byte offset of the first sample to be played in the loop. */
+    drwav_uint32 firstSampleByteOffset;
 
-    /* The offset into the audio data of the last sample to be played in the loop. */
-    drwav_uint32 lastSampleOffset;
+    /* The byte offset into the audio data of the last sample to be played in the loop. */
+    drwav_uint32 lastSampleByteOffset;
 
     /* A value to represent that playback should occur at a point between samples. This value ranges from 0 to UINT32_MAX. Where a value of 0 means no fraction, and a value of (UINT32_MAX / 2) would mean half a sample. */
     drwav_uint32 sampleFraction;
@@ -637,8 +637,8 @@ typedef struct
     /* Set to 0 for uncompressed formats. Else the last byte in compressed wave data where decompression can begin to find the value of the corresponding sample value. */
     drwav_uint32 blockStart;
 
-    /* For uncompressed formats this is the offset of the cue point into the audio data. For compressed formats this is relative to the block specified with blockStart. */
-    drwav_uint32 sampleOffset;
+    /* For uncompressed formats this is the byte offset of the cue point into the audio data. For compressed formats this is relative to the block specified with blockStart. */
+    drwav_uint32 sampleByteOffset;
 } drwav_cue_point;
 
 typedef struct
@@ -1384,7 +1384,7 @@ DRWAV_API drwav_bool32 drwav_fourcc_equal(const drwav_uint8* a, const char* b);
 #define DRWAV_MAX_SIMD_VECTOR_SIZE         32
 
 /* Architecture Detection */
-#if defined(__x86_64__) || (defined(_M_X64) && !defined(_M_ARM64EC))
+#if defined(__x86_64__) || defined(_M_X64)
     #define DRWAV_X64
 #elif defined(__i386) || defined(_M_IX86)
     #define DRWAV_X86
@@ -2096,7 +2096,7 @@ DRWAV_PRIVATE drwav_uint8* drwav__metadata_get_memory(drwav__metadata_parser* pP
             pParser->pDataCursor += align - modulo;
         }
     }
-
+    
     pResult = pParser->pDataCursor;
 
     /*
@@ -2189,12 +2189,12 @@ DRWAV_PRIVATE drwav_uint64 drwav__read_smpl_to_metadata_obj(drwav__metadata_pars
                 bytesJustRead = drwav__metadata_parser_read(pParser, smplLoopData, sizeof(smplLoopData), &totalBytesRead);
 
                 if (bytesJustRead == sizeof(smplLoopData)) {
-                    pMetadata->data.smpl.pLoops[iSampleLoop].cuePointId        = drwav_bytes_to_u32(smplLoopData + 0);
-                    pMetadata->data.smpl.pLoops[iSampleLoop].type              = drwav_bytes_to_u32(smplLoopData + 4);
-                    pMetadata->data.smpl.pLoops[iSampleLoop].firstSampleOffset = drwav_bytes_to_u32(smplLoopData + 8);
-                    pMetadata->data.smpl.pLoops[iSampleLoop].lastSampleOffset  = drwav_bytes_to_u32(smplLoopData + 12);
-                    pMetadata->data.smpl.pLoops[iSampleLoop].sampleFraction    = drwav_bytes_to_u32(smplLoopData + 16);
-                    pMetadata->data.smpl.pLoops[iSampleLoop].playCount         = drwav_bytes_to_u32(smplLoopData + 20);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].cuePointId            = drwav_bytes_to_u32(smplLoopData + 0);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].type                  = drwav_bytes_to_u32(smplLoopData + 4);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].firstSampleByteOffset = drwav_bytes_to_u32(smplLoopData + 8);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].lastSampleByteOffset  = drwav_bytes_to_u32(smplLoopData + 12);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].sampleFraction        = drwav_bytes_to_u32(smplLoopData + 16);
+                    pMetadata->data.smpl.pLoops[iSampleLoop].playCount             = drwav_bytes_to_u32(smplLoopData + 20);
                 } else {
                     break;
                 }
@@ -2254,7 +2254,7 @@ DRWAV_PRIVATE drwav_uint64 drwav__read_cue_to_metadata_obj(drwav__metadata_parse
                         pMetadata->data.cue.pCuePoints[iCuePoint].dataChunkId[3]    = cuePointData[11];
                         pMetadata->data.cue.pCuePoints[iCuePoint].chunkStart        = drwav_bytes_to_u32(cuePointData + 12);
                         pMetadata->data.cue.pCuePoints[iCuePoint].blockStart        = drwav_bytes_to_u32(cuePointData + 16);
-                        pMetadata->data.cue.pCuePoints[iCuePoint].sampleOffset      = drwav_bytes_to_u32(cuePointData + 20);
+                        pMetadata->data.cue.pCuePoints[iCuePoint].sampleByteOffset  = drwav_bytes_to_u32(cuePointData + 20);
                     } else {
                         break;
                     }
@@ -2407,7 +2407,7 @@ DRWAV_PRIVATE drwav_result drwav_buffer_reader_read(drwav_buffer_reader* pReader
     size_t bytesRemaining;
 
     DRWAV_ASSERT(pReader != NULL);
-
+    
     if (pBytesRead != NULL) {
         *pBytesRead = 0;
     }
@@ -2487,7 +2487,7 @@ DRWAV_PRIVATE drwav_uint64 drwav__read_bext_to_metadata_obj(drwav__metadata_pars
     size_t bytesRead = drwav__metadata_parser_read(pParser, bextData, sizeof(bextData), NULL);
 
     DRWAV_ASSERT(pParser->stage == drwav__metadata_parser_stage_read);
-
+    
     if (bytesRead == sizeof(bextData)) {
         drwav_buffer_reader reader;
         drwav_uint32 timeReferenceLow;
@@ -2549,7 +2549,7 @@ DRWAV_PRIVATE drwav_uint64 drwav__read_list_label_or_note_to_metadata_obj(drwav_
     drwav_uint64 totalBytesRead = 0;
     size_t bytesJustRead = drwav__metadata_parser_read(pParser, cueIDBuffer, sizeof(cueIDBuffer), &totalBytesRead);
 
-    DRWAV_ASSERT(pParser->stage == drwav__metadata_parser_stage_read);
+    DRWAV_ASSERT(pParser->stage == drwav__metadata_parser_stage_read);    
 
     if (bytesJustRead == sizeof(cueIDBuffer)) {
         drwav_uint32 sizeIncludingNullTerminator;
@@ -2721,7 +2721,7 @@ DRWAV_PRIVATE drwav_uint64 drwav__metadata_process_chunk(drwav__metadata_parser*
                         }
                     } else {
                         /* Loop count in header does not match the size of the chunk. */
-                    }
+                    }                    
                 }
             } else {
                 bytesRead = drwav__read_smpl_to_metadata_obj(pParser, pChunkHeader, &pParser->pMetadata[pParser->metadataCursor]);
@@ -3075,13 +3075,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
 
         if (pWav->container == drwav_container_riff || pWav->container == drwav_container_rifx) {
             if (drwav_bytes_to_u32_ex(chunkSizeBytes, pWav->container) < 36) {
-                /*
-                I've had a report of a WAV file failing to load when the size of the WAVE chunk is not encoded
-                and is instead just set to 0. I'm going to relax the validation here to allow these files to
-                load. Considering the chunk size isn't actually used this should be safe. With this change my
-                test suite still passes.
-                */
-                /*return DRWAV_FALSE;*/    /* Chunk size should always be at least 36 bytes. */
+                return DRWAV_FALSE;    /* Chunk size should always be at least 36 bytes. */
             }
         } else if (pWav->container == drwav_container_rf64) {
             if (drwav_bytes_to_u32_le(chunkSizeBytes) != 0xFFFFFFFF) {
@@ -3342,7 +3336,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
         if (((pWav->container == drwav_container_riff || pWav->container == drwav_container_rifx || pWav->container == drwav_container_rf64) && drwav_fourcc_equal(header.id.fourcc, "data")) ||
             ((pWav->container == drwav_container_w64) && drwav_guid_equal(header.id.guid, drwavGUID_W64_DATA))) {
             foundChunk_data = DRWAV_TRUE;
-
+            
             pWav->dataChunkDataPos  = cursor;
 
             if (pWav->container != drwav_container_rf64) {  /* The data chunk size for RF64 will always be set to 0xFFFFFFFF here. It was set to it's true value earlier. */
@@ -3432,7 +3426,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
                 return DRWAV_FALSE;
             }
 
-
+            
             channels         = drwav_bytes_to_u16_ex     (commData + 0, pWav->container);
             frameCount       = drwav_bytes_to_u32_ex     (commData + 2, pWav->container);
             sampleSizeInBits = drwav_bytes_to_u16_ex     (commData + 6, pWav->container);
@@ -3465,15 +3459,12 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
                     compressionFormat = DR_WAVE_FORMAT_MULAW;
                 } else if (drwav_fourcc_equal(type, "ima4")) {
                     compressionFormat = DR_WAVE_FORMAT_DVI_ADPCM;
-                    sampleSizeInBits  = 4;
+                    sampleSizeInBits = 4;
 
                     /*
                     I haven't been able to figure out how to get correct decoding for IMA ADPCM. Until this is figured out
                     we'll need to abort when we encounter such an encoding. Advice welcome!
                     */
-                    (void)compressionFormat;
-                    (void)sampleSizeInBits;
-
                     return DRWAV_FALSE;
                 } else {
                     return DRWAV_FALSE; /* Unknown or unsupported compression format. Need to abort. */
@@ -3510,7 +3501,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
 
             /* In AIFF, samples are padded to 8 byte boundaries. We need to round up our bits per sample here. */
             fmt.bitsPerSample += (fmt.bitsPerSample & 7);
-
+            
 
             /* If the form type is AIFC there will be some additional data in the chunk. We need to seek past it. */
             if (isAIFCFormType) {
@@ -3536,46 +3527,20 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
                 return DRWAV_FALSE;
             }
 
-            /* The position of the audio data starts at an offset. */
+            /* We need to seek forward by the offset. */
             offset = drwav_bytes_to_u32_ex(offsetAndBlockSizeData + 0, pWav->container);
-            pWav->dataChunkDataPos = cursor + offset;
-
-            /* The data chunk size needs to be reduced by the offset or else seeking will break. */
-            dataChunkSize = chunkSize;
-            if (dataChunkSize  > offset) {
-                dataChunkSize -= offset;
-            } else {
-                dataChunkSize = 0;
+            if (drwav__seek_forward(pWav->onSeek, offset, pWav->pUserData) == DRWAV_FALSE) {
+                return DRWAV_FALSE;
             }
+            cursor += offset;
 
-            if (sequential) {
-                if (foundChunk_fmt) {   /* <-- Name is misleading, but will be set to true if the COMM chunk has been parsed. */
-                    /*
-                    Getting here means we're opening in sequential mode and we've found the SSND (data) and COMM (fmt) chunks. We need
-                    to get out of the loop here or else we'll end up going past the data chunk and will have no way of getting back to
-                    it since we're not allowed to seek backwards.
+            pWav->dataChunkDataPos = cursor;
+            dataChunkSize = chunkSize;
 
-                    One subtle detail here is that there is an offset with the SSND chunk. We need to make sure we seek past this offset
-                    so we're left sitting on the first byte of actual audio data.
-                    */
-                    if (drwav__seek_forward(pWav->onSeek, offset, pWav->pUserData) == DRWAV_FALSE) {
-                        return DRWAV_FALSE;
-                    }
-                    cursor += offset;
-
-                    break;
-                } else {
-                    /*
-                    Getting here means the COMM chunk was not found. In sequential mode, if we haven't yet found the COMM chunk
-                    we'll need to abort because we can't be doing a backwards seek back to the SSND chunk in order to read the
-                    data. For this reason, this configuration of AIFF files are not supported with sequential mode.
-                    */
-                    return DRWAV_FALSE; 
-                }
+            /* If we're running in sequential mode, or we're not reading metadata, we have enough now that we can get out of the loop. */
+            if (sequential || !isProcessingMetadata) {
+                break;      /* No need to keep reading beyond the data chunk. */
             } else {
-                chunkSize += header.paddingSize;                /* <-- Make sure we seek past the padding. */
-                chunkSize -= sizeof(offsetAndBlockSizeData);    /* <-- This was read earlier. */
-
                 if (drwav__seek_forward(pWav->onSeek, chunkSize, pWav->pUserData) == DRWAV_FALSE) {
                     break;
                 }
@@ -3584,6 +3549,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
                 continue;   /* There may be some more metadata to read. */
             }
         }
+
 
 
         /* Getting here means it's not a chunk that we care about internally, but might need to be handled as metadata by the caller. */
@@ -3677,10 +3643,6 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
 
 
     /* At this point we should be sitting on the first byte of the raw audio data. */
-    if (drwav__seek_from_start(pWav->onSeek, pWav->dataChunkDataPos, pWav->pUserData) == DRWAV_FALSE) {
-        drwav_free(pWav->pMetadata, &pWav->allocationCallbacks);
-        return DRWAV_FALSE;
-    }
 
     /*
     I've seen a WAV file in the wild where a RIFF-ecapsulated file has the size of it's "RIFF" and
@@ -3702,30 +3664,18 @@ DRWAV_PRIVATE drwav_bool32 drwav_init__internal(drwav* pWav, drwav_chunk_proc on
         }
     }
 
+    if (drwav__seek_from_start(pWav->onSeek, pWav->dataChunkDataPos, pWav->pUserData) == DRWAV_FALSE) {
+        drwav_free(pWav->pMetadata, &pWav->allocationCallbacks);
+        return DRWAV_FALSE;
+    }
+
+
     pWav->fmt                 = fmt;
     pWav->sampleRate          = fmt.sampleRate;
     pWav->channels            = fmt.channels;
     pWav->bitsPerSample       = fmt.bitsPerSample;
-    pWav->translatedFormatTag = translatedFormatTag;
-
-    /*
-    I've had a report where files would start glitching after seeking. The reason for this is the data
-    chunk is not a clean multiple of the PCM frame size in bytes. Where this becomes a problem is when
-    seeking, because the number of bytes remaining in the data chunk is used to calculate the current
-    byte position. If this byte position is not aligned to the number of bytes in a PCM frame, it will
-    result in the seek not being cleanly positioned at the start of the PCM frame thereby resulting in
-    all decoded frames after that being corrupted.
-
-    To address this, we need to round the data chunk size down to the nearest multiple of the frame size.
-    */
-    if (!drwav__is_compressed_format_tag(translatedFormatTag)) {
-        drwav_uint32 bytesPerFrame = drwav_get_bytes_per_pcm_frame(pWav);
-        if (bytesPerFrame > 0) {
-            dataChunkSize -= (dataChunkSize % bytesPerFrame);
-        }
-    }
-
     pWav->bytesRemaining      = dataChunkSize;
+    pWav->translatedFormatTag = translatedFormatTag;
     pWav->dataChunkDataSize   = dataChunkSize;
 
     if (sampleCountFromFactChunk != 0) {
@@ -4039,8 +3989,8 @@ DRWAV_PRIVATE size_t drwav__write_or_count_metadata(drwav* pWav, drwav_metadata*
                 for (iLoop = 0; iLoop < pMetadata->data.smpl.sampleLoopCount; ++iLoop) {
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].cuePointId);
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].type);
-                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].firstSampleOffset);
-                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].lastSampleOffset);
+                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].firstSampleByteOffset);
+                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].lastSampleByteOffset);
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].sampleFraction);
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.smpl.pLoops[iLoop].playCount);
                 }
@@ -4080,7 +4030,7 @@ DRWAV_PRIVATE size_t drwav__write_or_count_metadata(drwav* pWav, drwav_metadata*
                     bytesWritten += drwav__write_or_count(pWav, pMetadata->data.cue.pCuePoints[iCuePoint].dataChunkId, 4);
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.cue.pCuePoints[iCuePoint].chunkStart);
                     bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.cue.pCuePoints[iCuePoint].blockStart);
-                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.cue.pCuePoints[iCuePoint].sampleOffset);
+                    bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, pMetadata->data.cue.pCuePoints[iCuePoint].sampleByteOffset);
                 }
             } break;
 
@@ -4239,7 +4189,7 @@ DRWAV_PRIVATE size_t drwav__write_or_count_metadata(drwav* pWav, drwav_metadata*
 
                     if (pMetadata->data.labelOrNote.stringLength > 0) {
                         chunkSize += pMetadata->data.labelOrNote.stringLength + 1;
-                    }
+                    }    
                 } break;
 
                 case drwav_metadata_type_list_labelled_cue_region:
@@ -4748,7 +4698,7 @@ DRWAV_PRIVATE drwav_result drwav_result_from_errno(int e)
     #ifdef ENOSYS
         case ENOSYS: return DRWAV_NOT_IMPLEMENTED;
     #endif
-    #if defined(ENOTEMPTY) && ENOTEMPTY != EEXIST   /* In AIX, ENOTEMPTY and EEXIST use the same value. */
+    #ifdef ENOTEMPTY
         case ENOTEMPTY: return DRWAV_DIRECTORY_NOT_EMPTY;
     #endif
     #ifdef ELOOP
@@ -5035,12 +4985,12 @@ DRWAV_PRIVATE drwav_result drwav_result_from_errno(int e)
 /* fopen */
 DRWAV_PRIVATE drwav_result drwav_fopen(FILE** ppFile, const char* pFilePath, const char* pOpenMode)
 {
-#if defined(_MSC_VER) && _MSC_VER >= 1400
+/*#if defined(_MSC_VER) && _MSC_VER >= 1400
     errno_t err;
 #endif
 
     if (ppFile != NULL) {
-        *ppFile = NULL;  /* Safety. */
+        *ppFile = NULL;
     }
 
     if (pFilePath == NULL || pOpenMode == NULL || ppFile == NULL) {
@@ -5065,12 +5015,12 @@ DRWAV_PRIVATE drwav_result drwav_fopen(FILE** ppFile, const char* pFilePath, con
     if (*ppFile == NULL) {
         drwav_result result = drwav_result_from_errno(errno);
         if (result == DRWAV_SUCCESS) {
-            result = DRWAV_ERROR;   /* Just a safety check to make sure we never ever return success when pFile == NULL. */
+            result = DRWAV_ERROR;
         }
 
         return result;
     }
-#endif
+#endif*/
 
     return DRWAV_SUCCESS;
 }
@@ -5096,8 +5046,8 @@ fallback, so if you notice your compiler not detecting this properly I'm happy t
 #ifndef DR_WAV_NO_WCHAR
 DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath, const wchar_t* pOpenMode, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
-    if (ppFile != NULL) {
-        *ppFile = NULL;  /* Safety. */
+    /*if (ppFile != NULL) {
+        *ppFile = NULL;
     }
 
     if (pFilePath == NULL || pOpenMode == NULL || ppFile == NULL) {
@@ -5106,7 +5056,6 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
 
 #if defined(DRWAV_HAS_WFOPEN)
     {
-        /* Use _wfopen() on Windows. */
     #if defined(_MSC_VER) && _MSC_VER >= 1400
         errno_t err = _wfopen_s(ppFile, pFilePath, pOpenMode);
         if (err != 0) {
@@ -5121,22 +5070,9 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
         (void)pAllocationCallbacks;
     }
 #else
-	/*
-    Use fopen() on anything other than Windows. Requires a conversion. This is annoying because
-	fopen() is locale specific. The only real way I can think of to do this is with wcsrtombs(). Note
-	that wcstombs() is apparently not thread-safe because it uses a static global mbstate_t object for
-    maintaining state. I've checked this with -std=c89 and it works, but if somebody get's a compiler
-	error I'll look into improving compatibility.
-    */
-
-	/*
-	Some compilers don't support wchar_t or wcsrtombs() which we're using below. In this case we just
-	need to abort with an error. If you encounter a compiler lacking such support, add it to this list
-	and submit a bug report and it'll be added to the library upstream.
-	*/
 	#if defined(__DJGPP__)
 	{
-		/* Nothing to do here. This will fall through to the error check below. */
+		
 	}
 	#else
     {
@@ -5146,7 +5082,6 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
         char* pFilePathMB = NULL;
         char pOpenModeMB[32] = {0};
 
-        /* Get the length first. */
         DRWAV_ZERO_OBJECT(&mbs);
         lenMB = wcsrtombs(NULL, &pFilePathTemp, 0, &mbs);
         if (lenMB == (size_t)-1) {
@@ -5162,7 +5097,6 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
         DRWAV_ZERO_OBJECT(&mbs);
         wcsrtombs(pFilePathMB, &pFilePathTemp, lenMB + 1, &mbs);
 
-        /* The open mode should always consist of ASCII characters so we should be able to do a trivial conversion. */
         {
             size_t i = 0;
             for (;;) {
@@ -5185,7 +5119,7 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
     if (*ppFile == NULL) {
         return DRWAV_ERROR;
     }
-#endif
+#endif*/
 
     return DRWAV_SUCCESS;
 }
@@ -5223,7 +5157,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init_file__internal_FILE(drwav* pWav, FILE* pFi
         fclose(pFile);
         return result;
     }
-
+    
     result = drwav_init__internal(pWav, onChunk, pChunkUserData, flags);
     if (result != DRWAV_TRUE) {
         fclose(pFile);
@@ -6145,13 +6079,6 @@ DRWAV_PRIVATE drwav_uint64 drwav_read_pcm_frames_s16__msadpcm(drwav* pWav, drwav
 {
     drwav_uint64 totalFramesRead = 0;
 
-    static drwav_int32 adaptationTable[] = {
-        230, 230, 230, 230, 307, 409, 512, 614,
-        768, 614, 512, 409, 307, 230, 230, 230
-    };
-    static drwav_int32 coeff1Table[] = { 256, 512, 0, 192, 240, 460,  392 };
-    static drwav_int32 coeff2Table[] = { 0,  -256, 0, 64,  0,  -208, -232 };
-
     DRWAV_ASSERT(pWav != NULL);
     DRWAV_ASSERT(framesToRead > 0);
 
@@ -6177,11 +6104,6 @@ DRWAV_PRIVATE drwav_uint64 drwav_read_pcm_frames_s16__msadpcm(drwav* pWav, drwav
                 pWav->msadpcm.cachedFrames[2]  = pWav->msadpcm.prevFrames[0][0];
                 pWav->msadpcm.cachedFrames[3]  = pWav->msadpcm.prevFrames[0][1];
                 pWav->msadpcm.cachedFrameCount = 2;
-
-                /* The predictor is used as an index into coeff1Table so we'll need to validate to ensure it never overflows. */
-                if (pWav->msadpcm.predictor[0] >= drwav_countof(coeff1Table)) {
-                    return totalFramesRead; /* Invalid file. */
-                }
             } else {
                 /* Stereo. */
                 drwav_uint8 header[14];
@@ -6204,11 +6126,6 @@ DRWAV_PRIVATE drwav_uint64 drwav_read_pcm_frames_s16__msadpcm(drwav* pWav, drwav
                 pWav->msadpcm.cachedFrames[2] = pWav->msadpcm.prevFrames[0][1];
                 pWav->msadpcm.cachedFrames[3] = pWav->msadpcm.prevFrames[1][1];
                 pWav->msadpcm.cachedFrameCount = 2;
-
-                /* The predictor is used as an index into coeff1Table so we'll need to validate to ensure it never overflows. */
-                if (pWav->msadpcm.predictor[0] >= drwav_countof(coeff1Table) || pWav->msadpcm.predictor[1] >= drwav_countof(coeff2Table)) {
-                    return totalFramesRead; /* Invalid file. */
-                }
             }
         }
 
@@ -6242,6 +6159,13 @@ DRWAV_PRIVATE drwav_uint64 drwav_read_pcm_frames_s16__msadpcm(drwav* pWav, drwav
             if (pWav->msadpcm.bytesRemainingInBlock == 0) {
                 continue;
             } else {
+                static drwav_int32 adaptationTable[] = {
+                    230, 230, 230, 230, 307, 409, 512, 614,
+                    768, 614, 512, 409, 307, 230, 230, 230
+                };
+                static drwav_int32 coeff1Table[] = { 256, 512, 0, 192, 240, 460,  392 };
+                static drwav_int32 coeff2Table[] = { 0,  -256, 0, 64,  0,  -208, -232 };
+
                 drwav_uint8 nibbles;
                 drwav_int32 nibble0;
                 drwav_int32 nibble1;
@@ -7887,7 +7811,7 @@ DRWAV_API void drwav_f32_to_s32(drwav_int32* pOut, const float* pIn, size_t samp
     }
 
     for (i = 0; i < sampleCount; ++i) {
-        *pOut++ = (drwav_int32)(2147483648.0f * pIn[i]);
+        *pOut++ = (drwav_int32)(2147483648.0 * pIn[i]);
     }
 }
 
@@ -8404,21 +8328,6 @@ DRWAV_API drwav_bool32 drwav_fourcc_equal(const drwav_uint8* a, const char* b)
 /*
 REVISION HISTORY
 ================
-v0.14.0 - TBD
-  - API CHANGE: The `firstSampleByteOffset`, `lastSampleByteOffset` and `sampleByteOffset` members of `drwav_cue_point` have been renamed to `firstSampleOffset`, `lastSampleOffset` and `sampleOffset`, respectively.
-  - Fix a static analysis warning.
-  - Fix compilation for AIX OS.
-
-v0.13.17 - 2024-12-17
-  - Fix a possible crash when reading from MS-ADPCM encoded files.
-  - Improve detection of ARM64EC
-
-v0.13.16 - 2024-02-27
-  - Fix a Wdouble-promotion warning.
-
-v0.13.15 - 2024-01-23
-  - Relax some unnecessary validation that prevented some files from loading.
-
 v0.13.14 - 2023-12-02
   - Fix a warning about an unused variable.
 

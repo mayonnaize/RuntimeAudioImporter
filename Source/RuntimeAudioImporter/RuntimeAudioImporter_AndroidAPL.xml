@@ -34,8 +34,8 @@
  private static native void audioCapturePayload(short[] shortPCMDataArray, int readSize);
 
  AudioRecord RuntimeMicrophone = null;
- Thread threadAudioCapture = null;
- RunnableAudioCapture runnableAudioCapture = null;
+ Thread RuntimeThreadAudioCapture = null;
+ RunnableAudioCapture RuntimeRunnableAudioCapture = null;
 
  public boolean AndroidThunkJava_AndroidStartCapture(int TargetSampleRate) {
 
@@ -55,22 +55,22 @@
          }
          RuntimeMicrophone.startRecording();
 
-         runnableAudioCapture = new RunnableAudioCapture(RuntimeMicrophone, minBufferSize);
-         threadAudioCapture = new Thread(runnableAudioCapture);
+         RuntimeRunnableAudioCapture = new RunnableAudioCapture(RuntimeMicrophone, minBufferSize);
+         RuntimeThreadAudioCapture = new Thread(RuntimeRunnableAudioCapture);
 
-         threadAudioCapture.start();
+         RuntimeThreadAudioCapture.start();
      }
 
      RuntimeMicrophone.startRecording();
-     runnableAudioCapture.setIsRunning(true);
+     RuntimeRunnableAudioCapture.setIsRunning(true);
 
      return true;
  }
 
  public void AndroidThunkJava_AndroidStopCapture() {
-    if (runnableAudioCapture != null)
+    if (RuntimeRunnableAudioCapture != null)
     {
-        runnableAudioCapture.setIsRunning(false);
+        RuntimeRunnableAudioCapture.setIsRunning(false);
     }
     if (RuntimeMicrophone != null)
     {

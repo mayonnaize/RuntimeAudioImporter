@@ -930,9 +930,9 @@ struct OpusFileCallbacks{
    \param      _mode The mode to open the file in.
    \return A stream handle to use with the callbacks, or <code>NULL</code> on
             error.*/
-OP_WARN_UNUSED_RESULT void *op_fopen(OpusFileCallbacks *_cb,
+/*OP_WARN_UNUSED_RESULT void *op_fopen(OpusFileCallbacks *_cb,
  const char *_path,const char *_mode) OP_ARG_NONNULL(1) OP_ARG_NONNULL(2)
- OP_ARG_NONNULL(3);
+ OP_ARG_NONNULL(3);*/
 
 /**Opens a stream with <code>fdopen()</code> and fills in a set of callbacks
     that can be used to access it.
@@ -947,8 +947,8 @@ OP_WARN_UNUSED_RESULT void *op_fopen(OpusFileCallbacks *_cb,
    \param      _mode The mode to open the file in.
    \return A stream handle to use with the callbacks, or <code>NULL</code> on
             error.*/
-OP_WARN_UNUSED_RESULT void *op_fdopen(OpusFileCallbacks *_cb,
- int _fd,const char *_mode) OP_ARG_NONNULL(1) OP_ARG_NONNULL(3);
+/*OP_WARN_UNUSED_RESULT void *op_fdopen(OpusFileCallbacks *_cb,
+ int _fd,const char *_mode) OP_ARG_NONNULL(1) OP_ARG_NONNULL(3);*/
 
 /**Opens a stream with <code>freopen()</code> and fills in a set of callbacks
     that can be used to access it.
@@ -969,9 +969,9 @@ OP_WARN_UNUSED_RESULT void *op_fdopen(OpusFileCallbacks *_cb,
                         or op_freopen().
    \return A stream handle to use with the callbacks, or <code>NULL</code> on
             error.*/
-OP_WARN_UNUSED_RESULT void *op_freopen(OpusFileCallbacks *_cb,
+/*OP_WARN_UNUSED_RESULT void *op_freopen(OpusFileCallbacks *_cb,
  const char *_path,const char *_mode,void *_stream) OP_ARG_NONNULL(1)
- OP_ARG_NONNULL(2) OP_ARG_NONNULL(3) OP_ARG_NONNULL(4);
+ OP_ARG_NONNULL(2) OP_ARG_NONNULL(3) OP_ARG_NONNULL(4);*/
 
 /**Creates a stream that reads from the given block of memory.
    This block of memory must contain the complete stream to decode.
@@ -1089,8 +1089,8 @@ int op_test(OpusHead *_head,
                        be opened, or one of the other failure codes from
                        op_open_callbacks() otherwise.
    \return A freshly opened \c OggOpusFile, or <code>NULL</code> on error.*/
-OP_WARN_UNUSED_RESULT OggOpusFile *op_open_file(const char *_path,int *_error)
- OP_ARG_NONNULL(1);
+/*OP_WARN_UNUSED_RESULT OggOpusFile *op_open_file(const char *_path,int *_error)
+ OP_ARG_NONNULL(1);*/
 
 /**Open a stream from a memory buffer.
    \param      _data  The memory buffer to open.
@@ -1240,8 +1240,8 @@ OP_WARN_UNUSED_RESULT OggOpusFile *op_open_callbacks(void *_stream,
                        be opened, or one of the other failure codes from
                        op_open_callbacks() otherwise.
    \return A partially opened \c OggOpusFile, or <code>NULL</code> on error.*/
-OP_WARN_UNUSED_RESULT OggOpusFile *op_test_file(const char *_path,int *_error)
- OP_ARG_NONNULL(1);
+/*OP_WARN_UNUSED_RESULT OggOpusFile *op_test_file(const char *_path,int *_error)
+ OP_ARG_NONNULL(1);*/
 
 /**Partially open a stream from a memory buffer.
    \see op_test_callbacks

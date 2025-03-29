@@ -21,6 +21,13 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnScanDirectoryForAudioFilesResult, bool, bS
 DECLARE_DELEGATE_TwoParams(FOnScanDirectoryForAudioFilesResultNative, bool, const TArray<FString>&);
 
 
+/** Static delegate broadcasting the result of float array to bytes conversion */
+DECLARE_DELEGATE_OneParam(FOnConvertFloatArrayToBytesResultNative, const TArray<uint8>&);
+
+/** Dynamic delegate broadcasting the result of float array to bytes conversion */
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnConvertFloatArrayToBytesResult, const TArray<uint8>&, ByteArray);
+
+
 /**
  * Runtime Audio Utilities
  * Contains various functions for working with audio data, including retrieving audio header info, scanning directories for audio files, and more
@@ -125,4 +132,38 @@ public:
 	 * @param Result Delegate broadcasting the result
 	 */
 	static void ScanDirectoryForAudioFiles(const FString& Directory, bool bRecursive, const FOnScanDirectoryForAudioFilesResultNative& Result);
+
+	/**
+	 * Converts an array of floating-point values (floating point 32-bit RAW PCM) into its raw byte representation
+	 * Useful for serialization or when raw binary data is needed for audio processing
+	 *
+	 * @param FloatArray The input array of float values to convert
+	 * @return A byte array containing the raw binary representation of the input float values
+	 * @note The output byte array will be 4 times the size of the input array (sizeof(float) = 4 bytes)
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Runtime Audio Utilities|Conversion")
+	static TArray<uint8> ConvertFloatArrayToBytes(const TArray<float>& FloatArray);
+
+	/**
+	 * Asynchronously converts an array of floating-point values (floating point 32-bit RAW PCM) into its raw byte representation
+	 * Useful for serialization or when raw binary data is needed for audio processing
+	 * The conversion is performed on a background thread to avoid blocking the game thread
+	 *
+	 * @param FloatArray The input array of float values to convert
+	 * @param Result Delegate broadcasting the result and converted byte array
+	 * @note The output byte array will be 4 times the size of the input array (sizeof(float) = 4 bytes)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Runtime Audio Utilities|Conversion")
+	static void ConvertFloatArrayToBytesAsync(const TArray<float>& FloatArray, const FOnConvertFloatArrayToBytesResult& Result);
+
+	/**
+	 * Asynchronously converts an array of floating-point values into its raw byte representation
+	 * The conversion is performed on a background thread to avoid blocking the game thread
+	 * Suitable for use in C++
+	 *
+	 * @param FloatArray The input array of float values to convert
+	 * @param Result Delegate broadcasting the result and converted byte array
+	 * @note The output byte array will be 4 times the size of the input array (sizeof(float) = 4 bytes)
+	 */
+	static void ConvertFloatArrayToBytesAsync(const TArray<float>& FloatArray, const FOnConvertFloatArrayToBytesResultNative& Result);
 };

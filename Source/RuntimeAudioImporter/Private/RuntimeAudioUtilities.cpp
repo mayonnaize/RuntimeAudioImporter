@@ -41,7 +41,7 @@ void URuntimeAudioUtilities::GetAudioHeaderInfoFromFile(const FString& FilePath,
 	{
 		auto ExecuteResult = [Result](bool bSucceeded, FRuntimeAudioHeaderInfo&& HeaderInfo)
 		{
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, HeaderInfo = MoveTemp(HeaderInfo)]() mutable
+			AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, HeaderInfo = MoveTemp(HeaderInfo)]() mutable
 			{
 				Result.ExecuteIfBound(bSucceeded, MoveTemp(HeaderInfo));
 			});
@@ -102,7 +102,7 @@ void URuntimeAudioUtilities::GetAudioHeaderInfoFromBuffer(TArray64<uint8> AudioD
 	{
 		auto ExecuteResult = [Result](bool bSucceeded, FRuntimeAudioHeaderInfo&& HeaderInfo)
 		{
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, HeaderInfo = MoveTemp(HeaderInfo)]() mutable
+			AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, HeaderInfo = MoveTemp(HeaderInfo)]() mutable
 			{
 				Result.ExecuteIfBound(bSucceeded, MoveTemp(HeaderInfo));
 			});
@@ -187,7 +187,7 @@ void URuntimeAudioUtilities::ScanDirectoryForAudioFiles(const FString& Directory
 	{
 		auto ExecuteResult = [Result](bool bSucceeded, TArray<FString>&& AudioFilePaths)
 		{
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, AudioFilePaths = MoveTemp(AudioFilePaths)]()
+			AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, AudioFilePaths = MoveTemp(AudioFilePaths)]()
 			{
 				Result.ExecuteIfBound(bSucceeded, AudioFilePaths);
 			});
@@ -227,5 +227,34 @@ void URuntimeAudioUtilities::ScanDirectoryForAudioFiles(const FString& Directory
 		}();
 
 		ExecuteResult(bSucceeded, MoveTemp(DirectoryVisitor_AudioScanner.AudioFilePaths));
+	});
+}
+
+TArray<uint8> URuntimeAudioUtilities::ConvertFloatArrayToBytes(const TArray<float>& FloatArray)
+{
+	TArray<uint8> ByteArray;
+	const int32 ByteCount = FloatArray.Num() * sizeof(float);
+	ByteArray.SetNum(ByteCount);
+	FMemory::Memcpy(ByteArray.GetData(), FloatArray.GetData(), ByteCount);
+	return ByteArray;
+}
+
+void URuntimeAudioUtilities::ConvertFloatArrayToBytesAsync(const TArray<float>& FloatArray, const FOnConvertFloatArrayToBytesResult& Result)
+{
+	ConvertFloatArrayToBytesAsync(FloatArray, FOnConvertFloatArrayToBytesResultNative::CreateLambda([Result](const TArray<uint8>& ByteArray)
+	{
+		Result.ExecuteIfBound(ByteArray);
+	}));
+}
+
+void URuntimeAudioUtilities::ConvertFloatArrayToBytesAsync(const TArray<float>& FloatArray, const FOnConvertFloatArrayToBytesResultNative& Result)
+{
+	AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [FloatArray, Result]()
+	{
+		TArray<uint8> ByteArray = ConvertFloatArrayToBytes(FloatArray);
+		AsyncTask(ENamedThreads::GameThread, [Result, ByteArray = MoveTemp(ByteArray)]() mutable
+		{
+			Result.ExecuteIfBound(ByteArray);
+		});
 	});
 }

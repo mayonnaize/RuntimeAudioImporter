@@ -7,6 +7,7 @@
 #include "VADIncludes.h"
 #include "HAL/UnrealMemory.h"
 #include "Codecs/RAW_RuntimeCodec.h"
+#include "Async/Async.h"
 #if !UE_VERSION_OLDER_THAN(5, 1, 0)
 #include "DSP/FloatArrayMath.h"
 #endif
@@ -100,6 +101,40 @@ bool URuntimeVoiceActivityDetector::SetVADMode(ERuntimeVADMode Mode)
 bool URuntimeVoiceActivityDetector::ProcessVAD(TArray<float> PCMData, int32 InSampleRate, int32 NumOfChannels)
 {
 #if WITH_RUNTIMEAUDIOIMPORTER_VAD_SUPPORT
+	auto ExecuteOnSpeechStarted = [this]()
+	{
+		URuntimeVoiceActivityDetector* VAD = this;
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(VAD)]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->OnSpeechStartedNative.Broadcast();
+				WeakThis->OnSpeechStarted.Broadcast();
+			}
+			else
+			{
+				UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to broadcast OnSpeechStartedNative and OnSpeechStarted delegates because the voice activity detector has been destroyed"));
+			}
+		});
+	};
+
+	auto ExecuteOnSpeechEnded = [this]()
+	{
+		URuntimeVoiceActivityDetector* VAD = this;
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(VAD)]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->OnSpeechEndedNative.Broadcast();
+				WeakThis->OnSpeechEnded.Broadcast();
+			}
+			else
+			{
+				UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to broadcast OnSpeechEndedNative and OnSpeechEnded delegates because the voice activity detector has been destroyed"));
+			}
+		});
+	};
+	
 	if (!VADInstance)
 	{
 		UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to process VAD for %s as the VAD instance is not valid"), *GetName());
@@ -224,8 +259,7 @@ bool URuntimeVoiceActivityDetector::ProcessVAD(TArray<float> PCMData, int32 InSa
 			if (!bIsSpeechActive && ConsecutiveVoiceFrames >= MinimumSpeechDuration)
 			{
 				bIsSpeechActive = true;
-				OnSpeechStartedNative.Broadcast();
-				OnSpeechStarted.Broadcast();
+				ExecuteOnSpeechStarted();
 				UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Speech started for %s"), *GetName());
 			}
 			
@@ -241,8 +275,7 @@ bool URuntimeVoiceActivityDetector::ProcessVAD(TArray<float> PCMData, int32 InSa
 			if (bIsSpeechActive && ConsecutiveSilenceFrames >= SilenceDuration)
 			{
 				bIsSpeechActive = false;
-				OnSpeechEndedNative.Broadcast();
-				OnSpeechEnded.Broadcast();
+				ExecuteOnSpeechEnded();
 				UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Speech ended for %s"), *GetName());
 			}
 

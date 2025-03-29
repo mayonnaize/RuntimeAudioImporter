@@ -1,5 +1,10 @@
 ﻿// Georgy Treshchev 2024.
 
+#if defined(PLATFORM_XSX) || defined(PLATFORM_XBOXONE)
+#define fdopen _fdopen
+#define strdup _strdup
+#endif
+
 #include "Codecs/OPUS_RuntimeCodec.h"
 #include "Codecs/RAW_RuntimeCodec.h"
 #include "RuntimeAudioImporterDefines.h"
@@ -424,9 +429,9 @@ bool FOPUS_RuntimeCodec::Decode(FEncodedAudioStruct EncodedData, FDecodedAudioSt
 	DecodedData.PCMInfo.PCMData = FRuntimeBulkDataBuffer<float>(DecodedPCMData, PCMNumOfFrames * NumOfChannels);
 
 	// Basic sound wave information
-	DecodedData.SoundWaveBasicInfo.Duration = static_cast<float>(TotalFrames) / OpusHeader->input_sample_rate;
+	DecodedData.SoundWaveBasicInfo.Duration = static_cast<float>(PCMNumOfFrames) / 48000;
 	DecodedData.SoundWaveBasicInfo.NumOfChannels = NumOfChannels;
-	DecodedData.SoundWaveBasicInfo.SampleRate = OpusHeader->input_sample_rate;
+	DecodedData.SoundWaveBasicInfo.SampleRate = 48000;
 	DecodedData.SoundWaveBasicInfo.AudioFormat = GetAudioFormat();
 
 	op_free(OpusFile);

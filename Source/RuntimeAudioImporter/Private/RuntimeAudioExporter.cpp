@@ -31,7 +31,7 @@ void URuntimeAudioExporter::ExportSoundWaveToFile(TWeakObjectPtr<UImportedSoundW
 	AudioFormat = AudioFormat == ERuntimeAudioFormat::Auto ? (AudioFormats.Num() == 0 ? ERuntimeAudioFormat::Invalid : AudioFormats[0]) : AudioFormat;
 
 	// Can't export to a file if there are multiple audio formats available
-	AudioFormat = AudioFormats.Num() > 1 ? ERuntimeAudioFormat::Invalid : AudioFormat;
+	AudioFormat = AudioFormats.Num() > 1 && AudioFormat == ERuntimeAudioFormat::Auto ? ERuntimeAudioFormat::Invalid : AudioFormat;
 
 	ExportSoundWaveToBuffer(ImportedSoundWavePtr, AudioFormat, Quality, OverrideOptions, FOnAudioExportToBufferResultNative::CreateLambda([Result, SavePath](bool bSucceeded, const TArray64<uint8>& AudioData)
 	{
@@ -91,7 +91,7 @@ void URuntimeAudioExporter::ExportSoundWaveToBuffer(TWeakObjectPtr<UImportedSoun
 
 	auto ExecuteResult = [Result](bool bSucceeded, TArray64<uint8>&& AudioData)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, AudioData = MoveTemp(AudioData)]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, AudioData = MoveTemp(AudioData)]()
 		{
 			Result.ExecuteIfBound(bSucceeded, AudioData);
 		});
@@ -256,7 +256,7 @@ void URuntimeAudioExporter::ExportSoundWaveToRAWBuffer(TWeakObjectPtr<UImportedS
 
 	auto ExecuteResult = [Result](bool bSucceeded, TArray64<uint8> AudioData)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, AudioData = MoveTemp(AudioData)]() mutable
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, AudioData = MoveTemp(AudioData)]() mutable
 		{
 			Result.ExecuteIfBound(bSucceeded, AudioData);
 		});

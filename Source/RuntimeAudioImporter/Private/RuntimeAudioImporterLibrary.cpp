@@ -384,7 +384,7 @@ void URuntimeAudioImporterLibrary::ConvertRegularToImportedSoundWave(USoundWave*
 
 	auto ExecuteResult = [Result](bool bSucceeded, UImportedSoundWave* ImportedSoundWave)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, ImportedSoundWave]() mutable
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, ImportedSoundWave]() mutable
 		{
 			Result.ExecuteIfBound(bSucceeded, ImportedSoundWave);
 		});
@@ -412,7 +412,7 @@ void URuntimeAudioImporterLibrary::ConvertRegularToImportedSoundWave(USoundWave*
 		return;
 	}
 
-	AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [ExecuteResult, ImportedSoundWaveClass, DecodedAudioInfo = MoveTemp(DecodedAudioInfo)]() mutable
+	AsyncTask(ENamedThreads::GameThread, [ExecuteResult, ImportedSoundWaveClass, DecodedAudioInfo = MoveTemp(DecodedAudioInfo)]() mutable
 	{
 		UImportedSoundWave* ImportedSoundWave = NewObject<UImportedSoundWave>((UObject*)GetTransientPackage(), ImportedSoundWaveClass);
 		if (!ImportedSoundWave)
@@ -440,7 +440,7 @@ void URuntimeAudioImporterLibrary::ImportAudioFromDecodedInfo(FDecodedAudioStruc
 	// Making sure we are in the game thread
 	if (!IsInGameThread())
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), DecodedAudioInfo = MoveTemp(DecodedAudioInfo)]() mutable
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), DecodedAudioInfo = MoveTemp(DecodedAudioInfo)]() mutable
 		{
 			if (WeakThis.IsValid())
 			{
@@ -493,7 +493,7 @@ bool URuntimeAudioImporterLibrary::ResampleAndMixChannelsInDecodedInfo(FDecodedA
 	
 	if (NewSampleRate == DecodedAudioInfo.SoundWaveBasicInfo.SampleRate && NewNumOfChannels == DecodedAudioInfo.SoundWaveBasicInfo.NumOfChannels)
 	{
-		UE_LOG(LogRuntimeAudioImporter, Log, TEXT("No need to resample or mix audio data"));
+		UE_LOG(LogRuntimeAudioImporter, Verbose, TEXT("No need to resample or mix audio data"));
 		return true;
 	}
 	
@@ -528,6 +528,7 @@ bool URuntimeAudioImporterLibrary::ResampleAndMixChannelsInDecodedInfo(FDecodedA
 	}
 
 	DecodedAudioInfo.PCMInfo.PCMData = FRuntimeBulkDataBuffer<float>(WaveData);
+	DecodedAudioInfo.PCMInfo.PCMNumOfFrames = DecodedAudioInfo.PCMInfo.PCMData.GetView().Num() / DecodedAudioInfo.SoundWaveBasicInfo.NumOfChannels;
 	return true;
 }
 
@@ -603,7 +604,7 @@ void URuntimeAudioImporterLibrary::OnProgress_Internal(int32 Percentage)
 	// Making sure we are in the game thread
 	if (!IsInGameThread())
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), Percentage]()
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), Percentage]()
 		{
 			if (WeakThis.IsValid())
 			{
@@ -629,7 +630,7 @@ void URuntimeAudioImporterLibrary::OnResult_Internal(UImportedSoundWave* Importe
 	// Making sure we are in the game thread
 	if (!IsInGameThread())
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), ImportedSoundWave, Status]()
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), ImportedSoundWave, Status]()
 		{
 			if (WeakThis.IsValid())
 			{

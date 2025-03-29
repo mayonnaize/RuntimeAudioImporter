@@ -187,7 +187,7 @@ bool FWAV_RuntimeCodec::Decode(FEncodedAudioStruct EncodedData, FDecodedAudioStr
 	if (!TempPCMData)
 	{
 		UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Failed to allocate memory for WAV Decoder"));
-		
+		drwav_uninit(&WAV_Decoder);
 		return false;
 	}
 
@@ -207,7 +207,7 @@ bool FWAV_RuntimeCodec::Decode(FEncodedAudioStruct EncodedData, FDecodedAudioStr
 		DecodedData.SoundWaveBasicInfo.AudioFormat = GetAudioFormat();
 	}
 
-	
+	drwav_uninit(&WAV_Decoder);
 	UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Successfully decoded WAV audio data to uncompressed audio format.\nDecoded audio info: %s"), *DecodedData.ToString());
 	return true;
 }

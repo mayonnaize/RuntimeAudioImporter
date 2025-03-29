@@ -28,7 +28,7 @@ void URuntimeAudioTranscoder::TranscodeRAWDataFromBuffer(TArray64<uint8> RAWData
 
 	auto ExecuteResult = [Result](bool bSucceeded, TArray64<uint8>&& AudioData)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, AudioData]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, AudioData]()
 		{
 			Result.ExecuteIfBound(bSucceeded, AudioData);
 		});
@@ -86,7 +86,7 @@ void URuntimeAudioTranscoder::TranscodeRAWDataFromFile(const FString& FilePathFr
 
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});
@@ -151,7 +151,7 @@ void URuntimeAudioTranscoder::TranscodeEncodedDataFromBuffer(TArray64<uint8> Enc
 
 	auto ExecuteResult = [Result](bool bSucceeded, TArray64<uint8>&& AudioData)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, AudioData]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, AudioData]()
 		{
 			Result.ExecuteIfBound(bSucceeded, AudioData);
 		});
@@ -242,7 +242,7 @@ void URuntimeAudioTranscoder::TranscodeEncodedDataFromFile(const FString& FilePa
 
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});

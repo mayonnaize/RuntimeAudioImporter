@@ -73,7 +73,7 @@ void UImportedSoundWave::DuplicateSoundWave(bool bUseSharedAudioBuffer, const FO
 
 	auto ExecuteResult = [Result](bool bSucceeded, UImportedSoundWave* DuplicatedSoundWave)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded, DuplicatedSoundWave]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded, DuplicatedSoundWave]()
 		{
 			if (DuplicatedSoundWave)
 			{
@@ -98,6 +98,7 @@ void UImportedSoundWave::DuplicateSoundWave(bool bUseSharedAudioBuffer, const FO
 	DuplicatedSoundWave->Duration = Duration;
 	DuplicatedSoundWave->SetSampleRate(GetSampleRate());
 	DuplicatedSoundWave->NumChannels = NumChannels;
+	DuplicatedSoundWave->DesiredNumSamplesPerChunk = DesiredNumSamplesPerChunk;
 	if (bUseSharedAudioBuffer)
 	{
 		DuplicatedSoundWave->DataGuard = DataGuard;
@@ -213,6 +214,11 @@ bool UImportedSoundWave::IsSeekable() const
 
 int32 UImportedSoundWave::OnGeneratePCMAudio(TArray<uint8>& OutAudio, int32 NumSamples)
 {
+	if (DesiredNumSamplesPerChunk.IsSet())
+	{
+		NumSamples = DesiredNumSamplesPerChunk.GetValue();
+	}
+	
 	float* RetrievedPCMDataPtr;
 	{
 		FRAIScopeLock Lock(&*DataGuard);
@@ -260,7 +266,7 @@ int32 UImportedSoundWave::OnGeneratePCMAudio(TArray<uint8>& OutAudio, int32 NumS
 	if (IsBound)
 	{
 		TArray<float> PCMData(RetrievedPCMDataPtr, NumSamples);
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
+		AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
 		{
 			if (WeakThis.IsValid())
 			{
@@ -301,7 +307,7 @@ void UImportedSoundWave::Parse(FAudioDevice* AudioDevice, const UPTRINT NodeWave
 {
 	FRAIScopeLock Lock(&*DataGuard);
 
-	if (ActiveSound.PlaybackTime == 0 && ActiveSound.PlaybackTime != ParseParams.StartTime)
+	if (ActiveSound.PlaybackTime == 0.f)
 	{
 		UE_LOG(LogRuntimeAudioImporter, Log, TEXT("The playback time for the sound wave '%s' will be set to '%f'"), *GetName(), ParseParams.StartTime);
 		RewindPlaybackTime_Internal(ParseParams.StartTime);
@@ -333,7 +339,7 @@ void UImportedSoundWave::Parse(FAudioDevice* AudioDevice, const UPTRINT NodeWave
 
 			PlaybackFinishedBroadcast = true;
 
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this)]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this)]()
 			{
 				if (WeakThis.IsValid())
 				{
@@ -403,7 +409,7 @@ void UImportedSoundWave::PopulateAudioDataFromDecodedInfo(FDecodedAudioStruct&& 
 		if (IsBound)
 		{
 			TArray<float> PCMData(PCMBufferInfo->PCMData.GetView().GetData(), PCMBufferInfo->PCMData.GetView().Num());
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
+			AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
 			{
 				if (WeakThis.IsValid())
 				{
@@ -433,7 +439,7 @@ void UImportedSoundWave::PopulateAudioDataFromDecodedInfo(FDecodedAudioStruct&& 
 		}();
 		if (IsBound)
 		{
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this)]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this)]()
 			{
 				if (WeakThis.IsValid())
 				{
@@ -474,7 +480,7 @@ void UImportedSoundWave::PrepareSoundWaveForMetaSounds(const FOnPrepareSoundWave
 	
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});
@@ -689,7 +695,7 @@ void UImportedSoundWave::StopPlayback(const UObject* WorldContextObject, const F
 
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});
@@ -756,7 +762,7 @@ void UImportedSoundWave::ReverseAudioBuffer(const FOnReverseAudioDataNative& Res
 
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});
@@ -777,6 +783,26 @@ void UImportedSoundWave::ReverseAudioBuffer(const FOnReverseAudioDataNative& Res
 	UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Successfully reversed the audio buffer for the imported sound wave '%s'"), *GetName());
 	PCMBufferInfo->PCMData = FRuntimeBulkDataBuffer<float>(PCMData);
 	ExecuteResult(true);
+}
+
+void UImportedSoundWave::SetNumSamplesPerChunk(int32 NumSamples)
+{
+	if (NumSamples <= 0 && NumSamples != INDEX_NONE)
+	{
+		UE_LOG(LogRuntimeAudioImporter, Warning, TEXT("Invalid number of samples per chunk: %d. Using default."), NumSamples);
+		DesiredNumSamplesPerChunk.Reset();
+		return;
+	}
+    
+	if (NumSamples == INDEX_NONE)
+	{
+		// Reset to use default
+		DesiredNumSamplesPerChunk.Reset();
+	}
+	else
+	{
+		DesiredNumSamplesPerChunk = NumSamples;
+	}
 }
 
 bool UImportedSoundWave::SetNumOfPlayedFrames(uint32 NumOfFrames)

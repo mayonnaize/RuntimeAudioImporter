@@ -280,7 +280,7 @@ static const OpusFileCallbacks *op_get_file_callbacks(FILE *_fp){
 }
 #endif
 
-void *op_fopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode){
+/*void *op_fopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode){
   FILE *fp;
 #if !defined(_WIN32)
   fp=fopen(_path,_mode);
@@ -300,16 +300,16 @@ void *op_fopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode){
 #endif
   if(fp!=NULL)*_cb=*op_get_file_callbacks(fp);
   return fp;
-}
+}*/
 
-void *op_fdopen(OpusFileCallbacks *_cb,int _fd,const char *_mode){
+/*void *op_fdopen(OpusFileCallbacks *_cb,int _fd,const char *_mode){
   FILE *fp;
   fp=fdopen(_fd,_mode);
   if(fp!=NULL)*_cb=*op_get_file_callbacks(fp);
   return fp;
-}
+}*/
 
-void *op_freopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode,
+/*void *op_freopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode,
  void *_stream){
   FILE *fp;
 #if !defined(_WIN32)
@@ -330,7 +330,7 @@ void *op_freopen(OpusFileCallbacks *_cb,const char *_path,const char *_mode,
 #endif
   if(fp!=NULL)*_cb=*op_get_file_callbacks(fp);
   return fp;
-}
+}*/
 
 static int op_mem_read(void *_stream,unsigned char *_ptr,int _buf_size){
   OpusMemStream *stream;

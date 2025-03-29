@@ -154,7 +154,7 @@ void USynthBasedSoundWave::Tick(float DeltaTime)
 			// Use the sound generator if available, otherwise use the synth component (same to FAsyncDecodeWorker behavior)
 			if (WeakThis->SoundGenerator)
 			{
-				PCMData.SetNumUninitialized(WeakThis->NumSamplesToGeneratePerCallback);
+				PCMData.SetNum(WeakThis->NumSamplesToGeneratePerCallback);
 				PCMData.SetNum(WeakThis->SoundGenerator->OnGenerateAudio(PCMData.GetData(), PCMData.Num()));
 			}
 			else

@@ -1649,10 +1649,10 @@ static OggOpusFile *op_open_close_on_failure(void *_stream,
   return of;
 }
 
-OggOpusFile *op_open_file(const char *_path,int *_error){
+/*OggOpusFile *op_open_file(const char *_path,int *_error){
   OpusFileCallbacks cb;
   return op_open_close_on_failure(op_fopen(&cb,_path,"rb"),&cb,_error);
-}
+}*/
 
 OggOpusFile *op_open_memory(const unsigned char *_data,size_t _size,
  int *_error){
@@ -1675,10 +1675,10 @@ static OggOpusFile *op_test_close_on_failure(void *_stream,
   return of;
 }
 
-OggOpusFile *op_test_file(const char *_path,int *_error){
+/*OggOpusFile *op_test_file(const char *_path,int *_error){
   OpusFileCallbacks cb;
   return op_test_close_on_failure(op_fopen(&cb,_path,"rb"),&cb,_error);
-}
+}*/
 
 OggOpusFile *op_test_memory(const unsigned char *_data,size_t _size,
  int *_error){

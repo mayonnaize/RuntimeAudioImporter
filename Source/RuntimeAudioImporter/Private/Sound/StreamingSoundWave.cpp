@@ -43,7 +43,7 @@ bool UStreamingSoundWave::ToggleVAD(bool bVAD)
 			if (WeakThis.IsValid())
 			{
 				WeakThis->OnSpeechStartedNative.Broadcast();
-				
+				WeakThis->OnSpeechStarted.Broadcast();
 			}
 		});
 
@@ -52,7 +52,7 @@ bool UStreamingSoundWave::ToggleVAD(bool bVAD)
 			if (WeakThis.IsValid())
 			{
 				WeakThis->OnSpeechEndedNative.Broadcast();
-				
+				WeakThis->OnSpeechEnded.Broadcast();
 			}
 		});
 	}
@@ -84,6 +84,7 @@ bool UStreamingSoundWave::SetMinimumSpeechDuration(int32 InDuration)
 	if (VADInstance)
 	{
 		VADInstance->MinimumSpeechDuration = InDuration;
+		return true;
 	}
 	UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to set minimum speech duration as the VAD instance is not valid"));
 	return false;
@@ -94,6 +95,7 @@ bool UStreamingSoundWave::SetSilenceDuration(int32 InDuration)
 	if (VADInstance)
 	{
 		VADInstance->SilenceDuration = InDuration;
+		return true;
 	}
 	UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to set silence duration as the VAD instance is not valid"));
 	return false;
@@ -163,7 +165,7 @@ void UStreamingSoundWave::PopulateAudioDataFromDecodedInfo(FDecodedAudioStruct&&
 		if (IsBound)
 		{
 			TArray<float> PCMData(DecodedAudioInfo.PCMInfo.PCMData.GetView().GetData(), DecodedAudioInfo.PCMInfo.PCMData.GetView().Num());
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
+			AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this), PCMData = MoveTemp(PCMData)]() mutable
 			{
 				if (WeakThis.IsValid())
 				{
@@ -193,7 +195,7 @@ void UStreamingSoundWave::PopulateAudioDataFromDecodedInfo(FDecodedAudioStruct&&
 		}();
 		if (IsBound)
 		{
-			AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [WeakThis = MakeWeakObjectPtr(this)]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis = MakeWeakObjectPtr(this)]()
 			{
 				if (WeakThis.IsValid())
 				{
@@ -253,7 +255,7 @@ void UStreamingSoundWave::PreAllocateAudioData(int64 NumOfBytesToPreAllocate, co
 
 	auto ExecuteResult = [Result](bool bSucceeded)
 	{
-		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [Result, bSucceeded]()
+		AsyncTask(ENamedThreads::GameThread, [Result, bSucceeded]()
 		{
 			Result.ExecuteIfBound(bSucceeded);
 		});

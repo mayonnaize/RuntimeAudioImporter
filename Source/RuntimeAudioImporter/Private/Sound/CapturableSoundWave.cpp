@@ -7,6 +7,11 @@
 #include "Async/Async.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 
+#if WITH_RUNTIMEAUDIOIMPORTER_CAPTURE_SUPPORT && PLATFORM_MAC
+#import <AVFoundation/AVFoundation.h>
+#import <AVKit/AVKit.h>
+#endif
+
 UCapturableSoundWave::UCapturableSoundWave(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -80,12 +85,61 @@ void UCapturableSoundWave::GetAvailableAudioInputDevices(const FOnGetAvailableAu
 #endif
 }
 
+#if WITH_RUNTIMEAUDIOIMPORTER_CAPTURE_SUPPORT && PLATFORM_MAC
+bool CheckAndRequestMicrophonePermission()
+{
+	// Check the current microphone authorization status
+	switch ([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio])
+	{
+	case AVAuthorizationStatusAuthorized:
+		// User has previously granted access
+			return true;
+            
+	case AVAuthorizationStatusNotDetermined:
+		{
+			// The app hasn't asked for mic access yet.
+			__block bool permissionGranted = false;
+			dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+            
+			[AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) {
+				permissionGranted = granted;
+				dispatch_semaphore_signal(semaphore);
+			}];
+            
+			// Wait for the async response before returning
+			dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            
+			return permissionGranted;
+		}
+            
+	case AVAuthorizationStatusDenied:
+		// User has previously denied access
+			return false;
+            
+	case AVAuthorizationStatusRestricted:
+		// User can't grant access due to restrictions
+			return false;
+	}
+
+	// Default return value for non-macOS platforms
+	return false;
+}
+#endif
+
 bool UCapturableSoundWave::StartCapture_Implementation(int32 DeviceId)
 {
 #if WITH_RUNTIMEAUDIOIMPORTER_CAPTURE_SUPPORT
 	Audio::FAudioCaptureDeviceParams Params = Audio::FAudioCaptureDeviceParams();
 	Params.DeviceIndex = DeviceId;
 	LastDeviceIndex = DeviceId;
+
+#if PLATFORM_MAC
+if (!CheckAndRequestMicrophonePermission())
+{
+	UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Unable to start capturing as the microphone permission on Mac was not granted"));
+	return false;
+}
+#endif
 
 #if UE_VERSION_NEWER_THAN(5, 2, 9)
 	Audio::FOnAudioCaptureFunction

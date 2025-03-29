@@ -1,4 +1,4 @@
-// Georgy Treshchev 2024.
+﻿// Georgy Treshchev 2024.
 
 #pragma once
 
@@ -225,13 +225,11 @@ namespace VoiceActivityDetector
 	}
 }
 
-// TODO: Fix the following error
-// E0289 no instance of constructor "FRuntimeBulkDataBuffer<DataType>::FRuntimeBulkDataBuffer [with DataType=float]" matches the argument list
 /**
  * An alternative to FBulkDataBuffer with consistent data types
  */
 template <typename DataType>
-class FRuntimeBulkDataBuffer
+class RUNTIMEAUDIOIMPORTER_API FRuntimeBulkDataBuffer
 {
 public:
 #if UE_VERSION_OLDER_THAN(4, 27, 0)
@@ -326,7 +324,7 @@ public:
 
 			FreeBuffer();
 			View = ViewType(NewBuffer, NewCapacity);
-			UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Reallocating buffer to append data (new capacity: %lld)"), NewCapacity);
+			UE_LOG(LogRuntimeAudioImporter, Verbose, TEXT("Reallocating buffer to append data (new capacity: %lld)"), NewCapacity);
 		}
 	}
 
@@ -441,7 +439,7 @@ protected:
 };
 
 /** Basic sound wave data */
-struct FSoundWaveBasicStruct
+struct RUNTIMEAUDIOIMPORTER_API FSoundWaveBasicStruct
 {
 	FSoundWaveBasicStruct()
 		: NumOfChannels(0)
@@ -482,7 +480,7 @@ struct FSoundWaveBasicStruct
 };
 
 /** PCM data buffer structure */
-struct FPCMStruct
+struct RUNTIMEAUDIOIMPORTER_API FPCMStruct
 {
 	FPCMStruct()
 		: PCMNumOfFrames(0)
@@ -515,7 +513,7 @@ struct FPCMStruct
 };
 
 /** Decoded audio information */
-struct FDecodedAudioStruct
+struct RUNTIMEAUDIOIMPORTER_API FDecodedAudioStruct
 {
 	/**
 	 * Whether the decoded audio data appear to be valid or not
@@ -543,7 +541,7 @@ struct FDecodedAudioStruct
 };
 
 /** Encoded audio information */
-struct FEncodedAudioStruct
+struct RUNTIMEAUDIOIMPORTER_API FEncodedAudioStruct
 {
 	FEncodedAudioStruct()
 		: AudioFormat(ERuntimeAudioFormat::Invalid)
@@ -581,7 +579,7 @@ struct FEncodedAudioStruct
 
 /** Compressed sound wave information */
 USTRUCT(BlueprintType, Category = "Runtime Audio Importer")
-struct FCompressedSoundWaveInfo
+struct RUNTIMEAUDIOIMPORTER_API FCompressedSoundWaveInfo
 {
 	GENERATED_BODY()
 
@@ -611,7 +609,7 @@ struct FCompressedSoundWaveInfo
 
 /** A line of subtitle text and the time at which it should be displayed. This is the same as FSubtitleCue but editable in Blueprints */
 USTRUCT(BlueprintType, Category = "Runtime Audio Importer")
-struct FEditableSubtitleCue
+struct RUNTIMEAUDIOIMPORTER_API FEditableSubtitleCue
 {
 	GENERATED_BODY()
 
@@ -630,7 +628,7 @@ struct FEditableSubtitleCue
 
 /** Platform audio input device info */
 USTRUCT(BlueprintType, Category = "Runtime Audio Importer")
-struct FRuntimeAudioInputDeviceInfo
+struct RUNTIMEAUDIOIMPORTER_API FRuntimeAudioInputDeviceInfo
 {
 	GENERATED_BODY()
 
@@ -677,7 +675,7 @@ struct FRuntimeAudioInputDeviceInfo
 
 /** Audio header information */
 USTRUCT(BlueprintType, Category = "Runtime Audio Importer")
-struct FRuntimeAudioHeaderInfo
+struct RUNTIMEAUDIOIMPORTER_API FRuntimeAudioHeaderInfo
 {
 	GENERATED_BODY()
 
@@ -723,7 +721,7 @@ struct FRuntimeAudioHeaderInfo
 
 /** Audio export override options */
 USTRUCT(BlueprintType, Category = "Runtime Audio Importer")
-struct FRuntimeAudioExportOverrideOptions
+struct RUNTIMEAUDIOIMPORTER_API FRuntimeAudioExportOverrideOptions
 {
 	GENERATED_BODY()
 

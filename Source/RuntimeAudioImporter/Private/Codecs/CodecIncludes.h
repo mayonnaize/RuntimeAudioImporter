@@ -12,7 +12,7 @@
 #undef memcpy
 
 #if PLATFORM_WINDOWS
-
+#define NOMINMAX
 #endif
 
 #define calloc(Count, Size) [&]() { void* MemPtr = FMemory::Malloc(Count * Size); if (MemPtr) { FMemory::Memset(MemPtr, 0, Count * Size); } return MemPtr; }()
@@ -31,8 +31,8 @@ THIRD_PARTY_INCLUDES_START
 #define DRMP3_PRIVATE static
 #include "ThirdParty/dr_mp3.h"
 #elif MINIMP3_IMPLEMENTATION
-
-
+#define MINIMP3_FLOAT_OUTPUT
+#define MINIMP3_NO_STDIO
 #include "ThirdParty/minimp3_ex.h"
 #include "ThirdParty/minimp3.h"
 #endif

@@ -71,7 +71,7 @@ bool FMP3_RuntimeCodec::GetHeaderInfo(FEncodedAudioStruct EncodedData, FRuntimeA
 		HeaderInfo.AudioFormat = GetAudioFormat();
 	}
 
-	
+	FMemory::Free(SoundInfo.buffer);
 #endif
 	UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Successfully retrieved header information for MP3 audio format.\nHeader info: %s"), *HeaderInfo.ToString());
 	return true;

@@ -77,7 +77,7 @@ bool FFLAC_RuntimeCodec::Decode(FEncodedAudioStruct EncodedData, FDecodedAudioSt
 	if (!TempPCMData)
 	{
 		UE_LOG(LogRuntimeAudioImporter, Error, TEXT("Failed to allocate memory for FLAC Decoder"));
-		
+		drflac_close(FLAC_Decoder);
 		return false;
 	}
 
@@ -97,7 +97,7 @@ bool FFLAC_RuntimeCodec::Decode(FEncodedAudioStruct EncodedData, FDecodedAudioSt
 		DecodedData.SoundWaveBasicInfo.AudioFormat = GetAudioFormat();
 	}
 
-	
+	drflac_close(FLAC_Decoder);
 	UE_LOG(LogRuntimeAudioImporter, Log, TEXT("Successfully decoded FLAC audio data to uncompressed audio format.\nDecoded audio info: %s"), *DecodedData.ToString());
 	return true;
 }

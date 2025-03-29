@@ -290,6 +290,14 @@ public:
 	void ReverseAudioBuffer(const FOnReverseAudioDataNative& Result);
 
 	/**
+	 * Set the desired number of samples to return during each playback chunk
+	 *
+	 * @param NumSamples The desired number of samples per chunk, or 0 to use default behavior
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Imported Sound Wave|Properties")
+	void SetNumSamplesPerChunk(int32 NumSamples);
+
+	/**
 	 * Change the number of frames played back. Used to rewind the sound
 	 *
 	 * @param NumOfFrames The new number of frames from which to continue playing sound
@@ -495,4 +503,7 @@ protected:
 
 	/** Initial desired number of channels of the sound wave (see SetInitialDesiredNumChannels) */
 	TOptional<uint32> InitialDesiredNumOfChannels;
+
+	/** Optional number of samples to return during each playback chunk. If not set, will use the value from OnGeneratePCMAudio */
+	TOptional<int32> DesiredNumSamplesPerChunk;
 };
